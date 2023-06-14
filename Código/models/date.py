@@ -29,3 +29,6 @@ class Date:
             return True
         else:
             return False
+        
+    def __str__(self):
+        return f"{self._year}/{self._month}/{self._day}"
