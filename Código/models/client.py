@@ -26,3 +26,7 @@ class Client:
             return True
         else:
             return False
+
+    #Otras Funciones   
+    def __str__(self):
+        return f"{self.get_name()} - {self.get_dni()}"

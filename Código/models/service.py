@@ -25,3 +25,7 @@ class Service:
             return True
         else:
             return False
+        
+    #Otras funciones
+    def __str__(self):
+        return f"{self.get_service()} - ${self.get_price()}"
