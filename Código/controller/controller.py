@@ -1,10 +1,10 @@
 from view.view import View
 from models.date import Date
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class Controller:
     def __init__(self):
-        self._today = datetime.now().date().__str__
+        self._today = datetime.now().date().strftime("%Y/%m/%d")
         self._view = View()
 
     def is_date_reserved(self, date):
@@ -12,11 +12,9 @@ class Controller:
         with open(r"resources\reserved_dates.txt", "r") as file:
             lines = file.readlines()
             for line in lines:
-                if line == date:
+                if line.strip() == date:
                     #Si se encuentra una coincidencia devolvemos True
                     return True
-                else:
-                    pass
             #Si no encontramos coincidencia en ninguna linea devolvemos False
             return False
     
@@ -64,6 +62,24 @@ class Controller:
                             self._view.print_message(f"Febrero en el año {year} solo tiene 28 días")
         return year, month, day
     
+    def find_available_dates(self, date):
+        date_object = datetime.strptime(date, "%Y/%m/%d")
+        previous_date = date_object - timedelta(days = 1)
+        next_date = date_object + timedelta(days = 1)
+        with open(r"resources\reserved_dates.txt", "r") as file:
+            reserved_dates = file.readlines()
+            reserved_dates = [date.strip() for date in reserved_dates]
+        next_counter = 1 #Se inician en 1 porque ya hubo una repeticion para cada fecha.
+        previuous_counter = 1
+        while next_date.strftime("%Y/%m/%d") in reserved_dates:
+            next_date += timedelta(days = 1)
+            next_counter += 1
+        while previous_date.strftime("%Y/%m/%d") in reserved_dates:
+            previous_date -= timedelta(days = 1)
+            previuous_counter += 1
+        available_dates = [previous_date.strftime("%Y/%m/%d"), next_date.strftime("%Y/%m/%d")]
+        return available_dates, next_counter, previuous_counter
+
     def menu(self):
         option = ""
         while True:
@@ -75,6 +91,12 @@ class Controller:
                     if not self.is_date_reserved(date):
                         self._view.print_message("La fecha está disponible")
                     else:
-                        pass
+                        available_dates, next_counter, previous_counter = self.find_available_dates(date)
+                        if next_counter > previous_counter and available_dates[0] > self._today:
+                            self._view.print_message(f"La fecha más proxima disponible es {available_dates[0]}")
+                        elif previous_counter > next_counter or available_dates[0] <= self._today:
+                            self._view.print_message(f"La fecha más proxima disponible es {available_dates[1]}")
+                        else:
+                            self._view.print_message(f"Las fechas mas próximas disponibles son {available_dates[0]} y {available_dates[1]}")
                 case _:
                     break
