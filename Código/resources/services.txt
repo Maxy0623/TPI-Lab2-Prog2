@@ -1,0 +1,14 @@
+DJ;30000
+Decoracion;12000
+Cotillon;4000
+Catering;15000
+Maquina de Humo;5000
+Salon;60000
+Parejas de Baile;10000
+Animador;6000
+Sonido e Iluminacion;20000
+Barras y Bebidas;9000
+Fotografo;14000
+Pelotero y Payaso;8000
+Mesa Dulce;11000
+Maquillaje y Vestimenta;18000
