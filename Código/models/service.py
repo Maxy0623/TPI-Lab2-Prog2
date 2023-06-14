@@ -9,7 +9,7 @@ class Service:
         return self._service
     
     def get_price(self):
-        return self._price
+        return int(self._price)
     
     #Setters
     def set_service(self, service):
