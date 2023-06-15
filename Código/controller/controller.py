@@ -3,6 +3,7 @@ from view.view import View
 from models.date import Date
 from models.client import Client
 from models.service import Service
+from models.reservation import Reservation
 from datetime import datetime, timedelta
 from extra.extra_functions import *
 import os
@@ -16,6 +17,7 @@ class Controller:
         self._view = View()
         self._clients = []
         self._services = []
+        self._reservations = []
         self.fill_services_list()
 
     #Validamos si la fecha está reservada en nuestro archivo de fechas reservadas.
@@ -65,7 +67,7 @@ class Controller:
                     if int(day) <= 31 and len(day) == 2:
                         break
                     else:
-                        self._view.print_message(f"El mes {month} solo tiene 31 días")
+                        self._view.print_message(f"El mes {month} solo tiene 31 días, asegurése de ingresar el dia en formato DD.")
                         self._view.print_message("Presione cualquier tecla para continuar...")
                         wait_key()
                         continue
@@ -73,7 +75,7 @@ class Controller:
                     if int(day) <= 30 and len(day) == 2:
                         break
                     else:
-                        self._view.print_message(f"El mes {month} solo tiene 30 días")
+                        self._view.print_message(f"El mes {month} solo tiene 30 días, asegurése de ingresar el dia en formato DD.")
                         self._view.print_message("Presione cualquier tecla para continuar...")
                         wait_key()
                         continue
@@ -86,7 +88,7 @@ class Controller:
                         if int(day) <= 29 and len(day) == 2:
                             break
                         else:
-                            self._view.print_message(f"Febrero en el año {year} solo tiene 29 días")
+                            self._view.print_message(f"Febrero en el año {year} solo tiene 29 días, asegurése de ingresar el dia en formato DD.")
                             self._view.print_message("Presione cualquier tecla para continuar...")
                             wait_key()
                             continue
@@ -94,7 +96,7 @@ class Controller:
                         if int(day) <= 28 and len(day) == 2:
                             break
                         else:
-                            self._view.print_message(f"Febrero en el año {year} solo tiene 28 días")
+                            self._view.print_message(f"Febrero en el año {year} solo tiene 28 días, asegurése de ingresar el dia en formato DD.")
                             self._view.print_message("Presione cualquier tecla para continuar...")
                             wait_key()
                             continue
@@ -132,8 +134,9 @@ class Controller:
         year, month, day = self.date_validation()
         #Se arma un string con la fecha.
         date = f"{year}/{month}/{day}"
+        date_object = datetime.strptime(date, "%Y/%m/%d")
         #Si la fecha no esta reservada se imprime disponible en caso contrario se buscan las mas proximas.
-        if not self.is_date_reserved(date):
+        if not self.is_date_reserved(date) and date_object > datetime.strptime(self._today, "%Y/%m/%d"):
             self._view.print_message("La fecha está disponible")
             self._view.print_message("Presione cualquier tecla para continuar...")
             wait_key()
@@ -160,19 +163,18 @@ class Controller:
                     self._view.print_message("Presione cualquier tecla para continuar...")
                     wait_key()
                 else:
+                    self._view.print_message(f"{date} no es una fecha válida")
                     self._view.print_message("Ingrese una fecha válida")
                     self._view.print_message("Presione cualquier tecla para continuar...")
                     wait_key()
 
     #Verificamos si el archivo está vacío.
     def is_file_empty(self, path):
-        file_size = os.path.getsize(path)
-        with open(path, "r") as file:
-            current_position = file.tell()
-            if current_position == file_size:
-                return True
-            else:
-                return False
+        file_size = os.stat(path).st_size
+        if file_size == 0:
+            return True
+        else:
+            return False
 
     #Creamos un cliente y lo añadimos a la lista de clientes.     
     def create_client(self, path):
@@ -185,16 +187,17 @@ class Controller:
                 client_data = f"{name};{dni}\n"
                 with open(path, "a") as file:
                     file.write(client_data)
+                client = Client(name, dni)
+                return client
             else:
                 self._view.print_message("Ingrese nuevamente por favor.")
                 self._view.print_message("Presione cualquier tecla para continuar...")
                 wait_key()
-                continue
 
     #Llenamos la lista de clientes con instancias de la clase Client.
     def fill_client_list(self):
         self._clients = []
-        with open(r"resources\clients.txt" ,"r") as file:
+        with open(r"resources\clients.txt","r") as file:
             lines = file.readlines()
             for line in lines:
                 data = line.strip().split(";")
@@ -204,6 +207,7 @@ class Controller:
     #Guardamos la fecha elegida por el cliente.
     def register_reservation_date(self):
         while True:
+            clear_screen()
             year, month, day = self.date_validation()
             date = f"{year}/{month}/{day}"
             if not self.is_date_reserved(date):
@@ -211,26 +215,33 @@ class Controller:
                 return date
             else:
                 self._view.print_message("La fecha no está disponible")
-                continue
+                self._view.print_message("Presione cualquier tecla para continuar...")
+                wait_key()
 
     #Guardamos el cliente con el que estamos operando. Se crea un cliente nuevo en caso de que no exista ninguno, y si no existe el cliente que quiere operar en la lista se crea.
     def register_reservation_client(self):
-        if self.is_file_empty(r"resources\clients.txt"):
-            self.create_client(r"resources\clients.txt")
-            self.register_reservation_client()
-        else:
-            self.fill_client_list()
-            while True:
-                self._view.print_client_list(self._clients)
-                option = self._view.request_client()
-                if option.isnumeric() and int(option) <= 1 and int(option) >= len(self._clients):
-                    client = self._clients[int(option) - 1]
-                    return client
-                elif option.isnumeric() and option == "0":
-                    self.create_client(r"resources\clients.txt")
-                    self.register_reservation_client()
-                else:
-                    self._view.print_message("Ingrese una opción válida")
+        while True:
+            verificator = self.is_file_empty(r"resources\clients.txt")
+            if verificator:
+                print(self.is_file_empty(r"resources\clients.txt"))
+                client = self.create_client(r"resources\clients.txt")
+                return client
+            else:
+                self.fill_client_list()
+                while True:
+                    clear_screen()
+                    self._view.print_client_list(self._clients)
+                    option = self._view.request_client()
+                    if option.isnumeric() and int(option) >= 1 and int(option) <= len(self._clients):
+                        client = self._clients[int(option) - 1]
+                        return client
+                    elif option.isnumeric() and option == "0":
+                        client = self.create_client(r"resources\clients.txt")
+                        return client
+                    else:
+                        self._view.print_message("Ingrese una opción válida")
+                        self._view.print_message("Presione una tecla para continuar...")
+                        wait_key()
 
     #Llenamos la lista de servicios con instancias de la clase Service
     def fill_services_list(self):
@@ -246,19 +257,40 @@ class Controller:
     def register_reservation_services(self):
         chosen_services = []
         while True:
+            clear_screen()
             self._view.print_services_list(self._services)
             option = self._view.request_service()
-            if option.isnumeric() and int(option) <= 1 and int(option) >= len(self._services):
+            if option.isnumeric() and int(option) >= 1 and int(option) <= len(self._services):
                 chosen_service = self._services[int(option) - 1]
                 chosen_services.append(chosen_service)
             elif option.isnumeric() and option == "0":
                 return chosen_services
             else:
                 self._view.print_message("Ingrese una opción válida")
+                self._view.print_message("Presione un tecla para continuar...")
+                wait_key()
 
+    #Creamos una instancia de la clase Reservation, calculamos el total y mostramos la info por pantalla.
     def register_reservation(self):
-        pass
+        date = self.register_reservation_date()
+        client = self.register_reservation_client()
+        chosen_services = self.register_reservation_services()
+        reservation = Reservation(client, date, chosen_services)
+        reservation.calculate_total()
+        clear_screen()
+        self._view.print_chosen_services(chosen_services)
+        self._view.print_message(f"Los servicios elegidos para la fecha {date}\nhacen un total de: ${reservation.get_total()}")
+        self._view.print_message(f"La seña a abonar es de: ${reservation.get_advance_payment()}")
+        line = f"{reservation.client.get_dni()};{reservation.get_date()};{reservation.get_total()}\n"
+        with open(r"resources\reservations.txt", "a") as file:
+            file.write(line)
+        self._view.print_message("Presione cualquier tecla para continuar...")
+        wait_key()
 
+    #
+    def fill_reservations_list(self):
+        pass
+    
     def menu(self):
         #Menu
         option = ""
@@ -269,6 +301,6 @@ class Controller:
                 case "1":
                     self.consult_date()
                 case "2":
-                    pass
+                    self.register_reservation()
                 case _:
                     break

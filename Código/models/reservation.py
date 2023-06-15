@@ -1,71 +1,70 @@
-from client import Client
-from date import Date
+from models.client import Client
 
 class Reservation:
     def __init__(self, client, date, services):
-        self._client = client
-        self._date = date
-        self._services = services
-        self._subtotal = None
-        self._admin_expenses = None
-        self._total = None
-        self._advance_payment = None
+        self.client = client
+        self.date = date
+        self.services = services
+        self.subtotal = 0
+        self.total = 0
+        self.advance_payment = 0
 
     #Getters
     def get_client(self):
-        return self._client
+        return self.client
     
     def get_date(self):
-        return self._date
+        return self.date
     
     def get_services(self):
-        return self._services
+        return self.services
     
     def get_subtotal(self):
-        return self._subtotal
+        return self.subtotal
     
     def get_admin_expenses(self):
-        return self._admin_expenses
+        return self.admin_expenses
     
     def get_total(self):
-        return self._total
+        return self.total
     
     def get_advance_payment(self):
-        return self._advance_payment
+        return self.advance_payment
     
     #Setters
     def set_client(self, client):
         if isinstance(client, Client):
-            self._client = client
+            self.client = client
             return True
         else:
             return False
     
     def set_date(self, date):
-        if isinstance(date, Date):
-            self._date = date
+        if type(date) == str and len(date) == 10:
+            self.date = date
             return True
         else:
             return False
         
     def set_services(self, services):
         if type(services) == list and services:
-            self._services = services
+            self.services = services
             return True
         else:
             return False
-        
-    def set_subtotal(self):
-        self._subtotal = 0
-        for service in self._services:
-            self._subtotal += service.get_price()
+    
+    #Otras Funciones
+    #Calcular subtotal (suma de los precios individuales de cada servicio elegido).
+    def _calculate_subtotal(self):
+        for service in self.services:
+            self.subtotal += service.get_price()
+        return
 
-    def set_admin_expenses(self):
-        self._admin_expenses = self._subtotal * 0.10
-
-    def set_total(self):
-        iva = self._subtotal * 0,21
-        self._total = self._subtotal + self._admin_expenses + iva
-
-    def set_advance_payment(self):
-        self._advance_payment = self._total * 0.30
+    #Se calcula el total sumando gastos administrativos e IVA. Además se calcula la seña.
+    def calculate_total(self):
+        self._calculate_subtotal()
+        admin_expenses = self.subtotal * 0.10
+        iva = self.subtotal * 0.21
+        self.total = self.subtotal + admin_expenses + iva
+        self.advance_payment = self.total * 0.30
+        return
