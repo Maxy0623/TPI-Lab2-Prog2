@@ -1,6 +1,5 @@
 #Para el controlador se importan modelos y vista. Ademas de otras librerías necesarias.
 from view.view import View
-from models.date import Date
 from models.client import Client
 from models.service import Service
 from models.reservation import Reservation
@@ -18,6 +17,7 @@ class Controller:
         self._clients = []
         self._services = []
         self._reservations = []
+        self._reserved_dates = []
         self.fill_services_list()
 
     #Validamos si la fecha está reservada en nuestro archivo de fechas reservadas.
@@ -287,9 +287,87 @@ class Controller:
         self._view.print_message("Presione cualquier tecla para continuar...")
         wait_key()
 
-    #
-    def fill_reservations_list(self):
-        pass
+    #Leemos el archivo con nuestras reservas almacenadas y las guardamos en una lista.
+    def read_reservations(self):
+        with open(r"resources\reservations.txt", "r") as file:
+            for line in file:
+                data = line.strip().split(";")
+                self._reservations.append(data)
+    
+    #Borramos una reserva, dando un mensaje de que fue borrada.
+    def delete_reservation(self, index):
+        deleted_reservation = self._reservations.pop(index - 1)
+        with open(r"resources\reservations.txt", "w") as file:
+            for data in self._reservations:
+                file.write(";".join(data)+"\n")
+        self._view.print_message(f"La reserva {deleted_reservation} ha sido borrada.")
+
+    #Calculamos la diferencia de días entre la fecha actual y la fecha de la reserva.
+    def calculate_diference(self, date):
+        format = "%Y/%m/%d"
+        today = datetime.strptime(self._today, format)
+        date_formated = datetime.strptime(date, format)
+        diference = date_formated - today
+        return diference.days
+
+    #Leemos el archivo con fechas reservadas y las guardamos en una lista.
+    def read_reserved_dates(self):
+        with open(r"resources\reserved_dates.txt" ,"r") as file:
+            for line in file:
+                date = line.strip()
+                self._reserved_dates.append(date)
+
+    #Borramos una fecha del archivo.
+    def delete_date(self, index):
+        deleted_date = self._reserved_dates.pop(index - 1)
+        with open(r"resources\reserved_dates.txt" ,"w") as file:
+            if self._reserved_dates:
+                for date in self._reserved_dates:
+                    file.write(date + "\n")
+            else:
+                file.write("")
+        self._view.print_message(f"La fecha {deleted_date} ya está disponible de nuevo.")
+
+    #Cancelamos una reserva existente y volvemos a poner como disponible la fecha de esa reserva.
+    def cancel_reservation(self):
+        self._reservations = []
+        self.read_reservations()
+        self.read_reserved_dates()
+        if not self._reservations:
+            clear_screen()
+            self._view.print_message("No hay reservas existentes")
+            self._view.print_message("Presione cualquier tecla para continuar...")
+            wait_key()
+            return
+        while True:
+            clear_screen()
+            self._view.print_reservations(self._reservations)
+            index = self._view.request_index()
+            if index.isnumeric():
+                if int(index) >= 1 and int(index) <= len(self._reservations):
+                    clear_screen()
+                    data = self._reservations[int(index) - 1]
+                    days_diference = self.calculate_diference(data[1])
+                    self.delete_reservation(int(index))
+                    self.delete_date(int(index))
+                    if days_diference >= 15:
+                        self._view.print_message(f"El reintegro es de un total de: ${float(data[2]) * 0.06}")
+                    else:
+                        self._view.print_message("No hay reintegro debido a que quedan menos de 15 días para la reserva.")
+                    self._view.print_message("Presione cualquier tecla para continuar...")
+                    wait_key()
+                    break
+                elif index == "0":
+                    break
+                else:
+                    self._view.print_message("Ingrese un número válido")
+                    self._view.print_message("Presione cualquier tecla para continuar...")
+                    wait_key()
+            else:
+                self._view.print_message("Ingrese una opción válida")
+                self._view.print_message("Presione cualquier tecla para continuar...")
+                wait_key()
+
     
     def menu(self):
         #Menu
@@ -302,5 +380,12 @@ class Controller:
                     self.consult_date()
                 case "2":
                     self.register_reservation()
-                case _:
+                case "3":
+                    self.cancel_reservation()
+                case "0":
+                    clear_screen()
                     break
+                case _:
+                    self._view.print_message("Ingrese una opción válida")
+                    self._view.print_message("Presione una tecla para continuar...")
+                    wait_key()

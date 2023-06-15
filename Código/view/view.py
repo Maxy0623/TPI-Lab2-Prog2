@@ -77,3 +77,18 @@ class View:
     #Se solicita el número de servicio.
     def request_service(self):
         return input("Ingrese el número del servicio: \n")
+    
+    #Se imprimen las reservas existentes.
+    def print_reservations(self, reservations):
+        reservations_counter = 1
+        if reservations:
+            print("Reservas existentes")
+        for data in reservations:
+            dni, date, total = data
+            print(f"{reservations_counter}. DNI: {dni} - Fecha: {date} - Total: ${total}")
+            reservations_counter += 1
+        print("0. Salir")
+
+    #Se solicita el número de reserva.
+    def request_index(self):
+        return input("Ingrese el número de reserva que desea borrar:\n")
